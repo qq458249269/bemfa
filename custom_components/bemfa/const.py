@@ -36,12 +36,17 @@ OPTIONS_SWING_BOTH_VALUE: Final = "swing_both_value"
 class TopicSuffix(StrEnum):
     """Suffix for bemfa MQTT topic"""
 
+    PLUG = "001"
     LIGHT = "002"
     FAN = "003"
     SENSOR = "004"
     CLIMATE = "005"
     SWITCH = "006"
     COVER = "009"
+    THERMOSTAT = "010"
+    WATER_HEATER = "011"
+    TV = "012"
+    AIR_PURIFIER = "013"
 
 
 MQTT_HOST: Final = "bemfa.com"
