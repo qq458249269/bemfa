@@ -7,14 +7,13 @@ import voluptuous as vol
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN, SensorDeviceClass
 from homeassistant.const import ATTR_DEVICE_CLASS
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import area_registry
+from homeassistant.helpers import area_registry, device_registry, entity_registry
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
 )
-from homeassistant.helpers.template import area_entities
 from .utils import has_key
 from .const import (
     OPTIONS_CO2,
@@ -27,6 +26,29 @@ from .const import (
 from .sync import SYNC_TYPES, Sync
 
 _LOGGING = logging.getLogger(__name__)
+
+
+def _area_entities(hass: HomeAssistant, area_id: str) -> list[str]:
+    """Return entities in an area.
+
+    Replaces ``homeassistant.helpers.template.area_entities`` which was
+    removed in newer Home Assistant versions.
+    """
+    ent_reg = entity_registry.async_get(hass)
+    entity_ids = [
+        entry.entity_id
+        for entry in entity_registry.async_entries_for_area(ent_reg, area_id)
+    ]
+    dev_reg = device_registry.async_get(hass)
+    # Also add entities tied to a device in the area that don't themselves
+    # have an area specified, since they inherit the area from the device.
+    entity_ids.extend(
+        entity.entity_id
+        for device in device_registry.async_entries_for_area(dev_reg, area_id)
+        for entity in entity_registry.async_entries_for_device(ent_reg, device.id)
+        if entity.area_id is None
+    )
+    return entity_ids
 
 
 @SYNC_TYPES.register("sensor")
@@ -57,7 +79,7 @@ class Sensor(Sync):
         co2_sensors: dict[str, str] = {}
 
         # filter entities in our area
-        a_entities = area_entities(self._hass, self._entity_id.split(".")[1])
+        a_entities = _area_entities(self._hass, self._entity_id.split(".")[1])
 
         for state in self._hass.states.async_all(SENSOR_DOMAIN):
             if state.entity_id not in a_entities:
