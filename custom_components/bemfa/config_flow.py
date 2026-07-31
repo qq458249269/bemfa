@@ -251,6 +251,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Set details of a hass-to-bemfa switch sync."""
         return await self._async_step_sync_config_done(user_input)
 
+    async def async_step_sync_config_button(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Set details of a hass-to-bemfa button sync."""
+        return await self._async_step_sync_config_done(user_input)
+
+    async def async_step_sync_config_number(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Set details of a hass-to-bemfa number sync."""
+        return await self._async_step_sync_config_done(user_input)
+
+    async def async_step_sync_config_device_tracker(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Set details of a hass-to-bemfa device tracker sync."""
+        return await self._async_step_sync_config_done(user_input)
+
     async def _async_step_sync_config_done(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:

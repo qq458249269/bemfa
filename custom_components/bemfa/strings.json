@@ -96,6 +96,27 @@
                     "name": "Name"
                 }
             },
+            "sync_config_button": {
+                "title": "Configuation",
+                "description": "Configuate a hass-to-bemfa button sync.",
+                "data": {
+                    "name": "Name"
+                }
+            },
+            "sync_config_number": {
+                "title": "Configuation",
+                "description": "Configuate a hass-to-bemfa number sync.",
+                "data": {
+                    "name": "Name"
+                }
+            },
+            "sync_config_device_tracker": {
+                "title": "Configuation",
+                "description": "Configuate a hass-to-bemfa device tracker sync.",
+                "data": {
+                    "name": "Name"
+                }
+            },
             "destroy_sync": {
                 "title": "Destroy sync(s)",
                 "description": "Select sync(s) to destroy."

@@ -18,6 +18,9 @@ from . import (
     sync_cover,
     sync_climate,
     sync_switch,
+    sync_button,
+    sync_number,
+    sync_device_tracker,
 )
 
 _LOGGING = logging.getLogger(__name__)

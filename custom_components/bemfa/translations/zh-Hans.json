@@ -96,6 +96,27 @@
                     "name": "\u540d\u79f0"
                 }
             },
+            "sync_config_button": {
+                "title": "\u914d\u7f6e",
+                "description": "\u5c06\u6309\u94ae\u540c\u6b65\u81f3\u5df4\u6cd5\u4e91\uff0c\u53ef\u901a\u8fc7\u8bed\u97f3\u52a9\u624b\u89e6\u53d1\u3002",
+                "data": {
+                    "name": "\u540d\u79f0"
+                }
+            },
+            "sync_config_number": {
+                "title": "\u914d\u7f6e",
+                "description": "\u5c06\u6570\u5b57\u5b9e\u4f53\u540c\u6b65\u81f3\u5df4\u6cd5\u4e91\uff0c\u53ef\u901a\u8fc7\u8bed\u97f3\u52a9\u624b\u67e5\u8be2\u5176\u503c\u3002",
+                "data": {
+                    "name": "\u540d\u79f0"
+                }
+            },
+            "sync_config_device_tracker": {
+                "title": "\u914d\u7f6e",
+                "description": "\u5c06\u8bbe\u5907\u8ddf\u8e2a\u5668\u540c\u6b65\u81f3\u5df4\u6cd5\u4e91\uff0c\u53ef\u901a\u8fc7\u8bed\u97f3\u52a9\u624b\u67e5\u8be2\u5176\u72b6\u6001\u3002",
+                "data": {
+                    "name": "\u540d\u79f0"
+                }
+            },
             "destroy_sync": {
                 "title": "\u5220\u9664\u540c\u6b65",
                 "description": "\u9009\u62e9\u9700\u8981\u5220\u9664\u7684\u540c\u6b65\u3002"
