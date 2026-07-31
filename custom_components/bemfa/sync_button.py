@@ -4,8 +4,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Callable
 from typing import Any
 
-from homeassistant.components.button import DOMAIN
-from homeassistant.const import SERVICE_PRESS
+from homeassistant.components.button import DOMAIN, SERVICE_PRESS
 from homeassistant.util.read_only_dict import ReadOnlyDict
 
 from .const import MSG_OFF, MSG_ON, TopicSuffix
