@@ -164,36 +164,35 @@ class ControllableSync(Sync):
         raise NotImplementedError
 
     def resolve_msg(self, msg: str):
-        """Resolve mqtt msg received from bemfa service."""
-        state = self._hass.states.get(self._entity_id)
-        if state is None:
-            return
+        """Resolve mqtt msg received from bemfa service.
 
+        Always execute the command without comparing to the entity's current
+        state, e.g. a repeated ``on`` command turns the entity on again.
+        """
         msg_list: list[str] = msg.split(MSG_SEPARATOR)
         if msg_list[0] == MSG_OFF:
             msg_list = [MSG_OFF]  # discard any data followed by "off"
 
-        # generate msg from entity to compare to received msg
-        state_msg_list = MSG_SEPARATOR.join(self._generate_msg_parts()).split(
-            MSG_SEPARATOR
-        )
+        state = self._hass.states.get(self._entity_id)
+        attributes = state.attributes if state is not None else {}
 
         for resolver in self._msg_resolvers():
             start_index = resolver[0]
-            end_index = min(resolver[1], len(msg_list), len(state_msg_list))
-            if msg_list[start_index:end_index] != state_msg_list[start_index:end_index]:
-                (domain, service, data) = resolver[2](
-                    [
-                        int(msg) if msg.isdigit() else msg
-                        for msg in msg_list[start_index:end_index]
-                    ],
-                    state.attributes,
-                )
-                data.update({ATTR_ENTITY_ID: self._entity_id})
-                self._hass.services.call(
-                    domain=domain, service=service, service_data=data
-                )
-                break  # call only one service at most on each msg received
+            end_index = resolver[1]
+            if end_index > len(msg_list):
+                continue
+            (domain, service, data) = resolver[2](
+                [
+                    int(msg) if msg.isdigit() else msg
+                    for msg in msg_list[start_index:end_index]
+                ],
+                attributes,
+            )
+            data.update({ATTR_ENTITY_ID: self._entity_id})
+            self._hass.services.call(
+                domain=domain, service=service, service_data=data
+            )
+            break  # call only one service at most on each msg received
 
     @abstractmethod
     def _msg_resolvers(

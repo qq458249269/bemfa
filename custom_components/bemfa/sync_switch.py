@@ -27,6 +27,7 @@ from homeassistant.components.vacuum import (
     VacuumEntityFeature,
 )
 from homeassistant.const import (
+    ATTR_ENTITY_ID,
     ATTR_SUPPORTED_FEATURES,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
@@ -170,6 +171,15 @@ class Scene(Switch):
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
         return lambda state, attributes: MSG_OFF
+
+    def resolve_msg(self, msg: str):
+        """Only turn on a scene; there is no off service for scenes."""
+        if msg.split(MSG_SEPARATOR)[0] == MSG_ON:
+            self._hass.services.call(
+                domain=SCENE_DOMAIN,
+                service=SERVICE_TURN_ON,
+                service_data={ATTR_ENTITY_ID: self._entity_id},
+            )
 
 
 @SYNC_TYPES.register("group")
