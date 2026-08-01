@@ -66,5 +66,7 @@ MSG_PAUSE: Final = "pause"  # for covers
 # #### Service Api ####
 FETCH_TOPICS_URL: Final = "https://apis.bemfa.com/vb/api/v2/allTopic?openID={uid}&type=1"
 CREATE_TOPIC_URL: Final = "https://pro.bemfa.com/v1/createTopic"
+CREATE_TOPIC_URL_LEGACY: Final = "https://api.bemfa.com/api/user/addtopic/"
 RENAME_TOPIC_URL: Final = "https://apis.bemfa.com/va/modifyName"
+RENAME_TOPIC_URL_LEGACY: Final = "https://api.bemfa.com/api/device/v1/topic/name/"
 DEL_TOPIC_URL: Final = "https://pro.bemfa.com/v1/deleteTopic"
