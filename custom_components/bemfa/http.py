@@ -46,10 +46,15 @@ class BemfaHttp:
             if res_dict.get("code") != 0:
                 _LOGGING.warning("Unexpected response from bemfa API: %s", res_dict)
                 return {}
+            data = res_dict.get("data", [])
+            if not isinstance(data, list):
+                _LOGGING.warning("Unexpected response from bemfa API: %s", res_dict)
+                return {}
             return {
-                topic["topic"]: topic["name"]
-                for topic in res_dict.get("data", [])
-                if topic.get("topic", "").startswith(TOPIC_PREFIX)
+                topic.get("topic"): topic.get("name")
+                for topic in data
+                if isinstance(topic, dict)
+                and topic.get("topic", "").startswith(TOPIC_PREFIX)
             }
 
     async def async_create_topic(self, topic: str, name: str) -> None:
