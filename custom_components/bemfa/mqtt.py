@@ -32,7 +32,7 @@ class BemfaMqtt:
     """Set up mqtt connections to bemfa service, subscribe topcs and publish messages."""
 
     def __init__(
-        self, hass: HomeAssistant, uid: str, entity_ids: list[str] | None
+        self, hass: HomeAssistant, uid: str
     ) -> None:
         """Initialize."""
         self._hass = hass
@@ -108,8 +108,16 @@ class BemfaMqtt:
         self._ping_publish_timer = asyncio.ensure_future(_publish_job())
 
     def _reconnect(self):
-        self.disconnect()
-        self.connect()
+        try:
+            self.disconnect()
+            self.connect()
+        except Exception:
+            _LOGGING.exception(
+                "Failed to reconnect to bemfa MQTT server, will retry after a heartbeat cycle"
+            )
+            # Keep the heartbeat running so a later retry can succeed
+            self._ping()
+            return
         for sync in self._topic_to_sync.values():
             self.create_sync(sync)
 
@@ -149,5 +157,17 @@ class BemfaMqtt:
                 self._ping_lost = 0
             return
 
-        if message.topic in self._topic_to_sync:
-            self._topic_to_sync[message.topic].resolve_msg(message.payload.decode())
+        sync = self._topic_to_sync.get(message.topic)
+        if sync is None:
+            return
+
+        # paho callbacks run on its network thread; hop to the event loop
+        # to keep state/service calls off the network thread
+        self._hass.loop.call_soon_threadsafe(self._handle_message, sync, message.payload)
+
+    def _handle_message(self, sync: Sync, payload: bytes) -> None:
+        """Handle a message from a sync topic on the event loop."""
+        try:
+            sync.resolve_msg(payload.decode())
+        except Exception:
+            _LOGGING.exception("Failed to handle message for topic %s", sync.topic)

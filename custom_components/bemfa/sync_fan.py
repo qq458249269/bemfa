@@ -77,7 +77,11 @@ class Fan(ControllableSync):
                         )
                     },
                 )
-                if len(msg) > 1 and has_key(attributes, ATTR_PERCENTAGE_STEP)
+                if (
+                    len(msg) > 1
+                    and isinstance(msg[1], int)
+                    and has_key(attributes, ATTR_PERCENTAGE_STEP)
+                )
                 else (
                     DOMAIN,
                     SERVICE_TURN_ON if msg[0] == MSG_ON else SERVICE_TURN_OFF,

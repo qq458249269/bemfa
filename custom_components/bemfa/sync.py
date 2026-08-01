@@ -112,6 +112,13 @@ class Sync(ABC):
 
         return MSG_SEPARATOR.join(parts)
 
+    def resolve_msg(self, msg: str):
+        """Resolve an mqtt message received from bemfa service.
+
+        Read-only syncs do not act on incoming messages; controllable
+        syncs override this method.
+        """
+
     @abstractmethod
     def _generate_msg_parts(self) -> list[str]:
         raise NotImplementedError
@@ -169,6 +176,9 @@ class ControllableSync(Sync):
         Always execute the command without comparing to the entity's current
         state, e.g. a repeated ``on`` command turns the entity on again.
         """
+        if not msg:
+            return
+
         msg_list: list[str] = msg.split(MSG_SEPARATOR)
         if msg_list[0] == MSG_OFF:
             msg_list = [MSG_OFF]  # discard any data followed by "off"
@@ -181,16 +191,26 @@ class ControllableSync(Sync):
             end_index = resolver[1]
             if end_index > len(msg_list):
                 continue
-            (domain, service, data) = resolver[2](
-                [
-                    int(msg) if msg.isdigit() else msg
-                    for msg in msg_list[start_index:end_index]
-                ],
-                attributes,
-            )
+            try:
+                (domain, service, data) = resolver[2](
+                    [
+                        int(part) if part.isdigit() else part
+                        for part in msg_list[start_index:end_index]
+                    ],
+                    attributes,
+                )
+            except (TypeError, ValueError, KeyError, IndexError):
+                _LOGGING.warning(
+                    "Ignoring message %r for %s: unsupported value",
+                    msg,
+                    self._entity_id,
+                )
+                return
             data.update({ATTR_ENTITY_ID: self._entity_id})
-            self._hass.services.call(
-                domain=domain, service=service, service_data=data
+            self._hass.async_create_task(
+                self._hass.services.async_call(
+                    domain=domain, service=service, service_data=data
+                )
             )
             break  # call only one service at most on each msg received
 
