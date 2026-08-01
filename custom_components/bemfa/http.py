@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -26,15 +25,6 @@ class BemfaHttp:
         self._hass = hass
         self._uid = uid
 
-    async def _post(self, url: str, data: dict[str, str | int]) -> None:
-        """POST JSON to the bemfa API and raise on errors."""
-        session = async_get_clientsession(self._hass)
-        async with session.post(url, json=data) as res:
-            res.raise_for_status()
-            res_dict = await res.json(content_type=None)
-            if res_dict.get("code") != 0:
-                raise HomeAssistantError(f"bemfa API error: {res_dict}")
-
     async def async_fetch_all_topics(self) -> dict[str, str]:
         """Fetch all topics created by us from bemfa service."""
         session = async_get_clientsession(self._hass)
@@ -42,21 +32,21 @@ class BemfaHttp:
             FETCH_TOPICS_URL.format(uid=self._uid),
         ) as res:
             res.raise_for_status()
-            res_dict = await res.json(content_type=None)
-            if res_dict.get("code") != 0:
-                _LOGGING.warning("Unexpected response from bemfa API: %s", res_dict)
-                return {}
-            return {
-                topic["topic"]: topic["name"]
-                for topic in res_dict.get("data", [])
-                if topic.get("topic", "").startswith(TOPIC_PREFIX)
-            }
+            res_dict = await res.json(content_type="text/html", encoding="utf-8")
+            if res_dict["code"] == 111 and res_dict["status"] == "get ok":
+                return {
+                    topic["topic_id"]: topic["v_name"]
+                    for topic in res_dict["data"]
+                    if topic["topic_id"].startswith(TOPIC_PREFIX)
+                }
+            return {}
 
     async def async_create_topic(self, topic: str, name: str) -> None:
         """Create a topic to bemfa service."""
         if not topic.startswith(TOPIC_PREFIX):
             return
-        await self._post(
+        session = async_get_clientsession(self._hass)
+        await session.post(
             CREATE_TOPIC_URL,
             data={
                 "uid": self._uid,
@@ -70,7 +60,8 @@ class BemfaHttp:
         """Rename a topic in bemfa service."""
         if not topic.startswith(TOPIC_PREFIX):
             return
-        await self._post(
+        session = async_get_clientsession(self._hass)
+        await session.post(
             RENAME_TOPIC_URL,
             data={
                 "uid": self._uid,
@@ -84,7 +75,8 @@ class BemfaHttp:
         """Delete a topic from bemfa service."""
         if not topic.startswith(TOPIC_PREFIX):
             return
-        await self._post(
+        session = async_get_clientsession(self._hass)
+        await session.post(
             DEL_TOPIC_URL,
             data={
                 "uid": self._uid,

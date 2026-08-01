@@ -35,4 +35,4 @@ class BinarySensor(Sync):
         if state is None:
             return []
 
-        return ["", "", MSG_ON if state.state == STATE_ON else MSG_OFF]
+        return ["", "", "", MSG_ON if state.state == STATE_ON else MSG_OFF]

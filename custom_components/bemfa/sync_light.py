@@ -81,12 +81,8 @@ class Light(ControllableSync):
                         ),
                     }
                     if len(msg) > 2
-                    and isinstance(msg[2], int)
-                    and msg[2] > 0
                     and has_key(attributes, ATTR_SUPPORTED_COLOR_MODES)
                     and ColorMode.COLOR_TEMP in attributes[ATTR_SUPPORTED_COLOR_MODES]
-                    and has_key(attributes, ATTR_MIN_COLOR_TEMP_KELVIN)
-                    and has_key(attributes, ATTR_MAX_COLOR_TEMP_KELVIN)
                     else {
                         ATTR_BRIGHTNESS_PCT: msg[1],
                         ATTR_RGB_COLOR: [
@@ -95,7 +91,7 @@ class Light(ControllableSync):
                             msg[2] % 256,
                         ],
                     }
-                    if len(msg) > 2 and isinstance(msg[2], int) and msg[2] > 0
+                    if len(msg) > 2
                     else {ATTR_BRIGHTNESS_PCT: msg[1]}
                     if len(msg) > 1
                     else {},

@@ -174,15 +174,12 @@ class Scene(Switch):
 
     def resolve_msg(self, msg: str):
         """Only turn on a scene; there is no off service for scenes."""
-        if not msg or msg.split(MSG_SEPARATOR)[0] != MSG_ON:
-            return
-        self._hass.async_create_task(
-            self._hass.services.async_call(
+        if msg.split(MSG_SEPARATOR)[0] == MSG_ON:
+            self._hass.services.call(
                 domain=SCENE_DOMAIN,
                 service=SERVICE_TURN_ON,
                 service_data={ATTR_ENTITY_ID: self._entity_id},
             )
-        )
 
 
 @SYNC_TYPES.register("group")

@@ -20,7 +20,7 @@ class BemfaService:
         """Initialize."""
         self._hass = hass
         self._bemfa_http = BemfaHttp(hass, uid)
-        self._bemfa_mqtt = BemfaMqtt(hass, uid)
+        self._bemfa_mqtt = BemfaMqtt(hass, uid, None)
 
     async def async_start(self, config: dict[str, dict[str, str]]) -> None:
         """Start the servcie, called when Bemfa component starts."""

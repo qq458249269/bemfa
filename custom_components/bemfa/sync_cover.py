@@ -69,7 +69,7 @@ class Cover(ControllableSync):
                     SERVICE_SET_COVER_POSITION,
                     {ATTR_POSITION: msg[1]},
                 )
-                if len(msg) > 1 and isinstance(msg[1], int)
+                if len(msg) > 1
                 else (
                     DOMAIN,
                     SERVICE_OPEN_COVER
