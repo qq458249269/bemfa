@@ -38,7 +38,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import DOMAIN as HOMEASSISTANT_DOMAIN
 from homeassistant.util.read_only_dict import ReadOnlyDict
-from .const import MSG_OFF, MSG_ON, TopicSuffix
+from .const import MSG_OFF, MSG_ON, MSG_SEPARATOR, TopicSuffix
 from .sync import SYNC_TYPES, ControllableSync
 
 
@@ -70,6 +70,21 @@ class Switch(ControllableSync):
         self,
     ) -> list[Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]]:
         return [self._msg_generator()]
+
+    def resolve_msg(self, msg: str):
+        """Always execute the switch command without reading entity state.
+
+        on/off are idempotent, so a repeated command still performs the
+        action (e.g. toggling a scene or restarting an automation).
+        """
+        msg = msg.split(MSG_SEPARATOR)[0]
+        state = self._hass.states.get(self._entity_id)
+        attributes = state.attributes if state is not None else {}
+        (domain, service, data) = self._msg_resolvers()[0][2](
+            [msg], attributes
+        )
+        data.update({ATTR_ENTITY_ID: self._entity_id})
+        self._hass.services.call(domain=domain, service=service, service_data=data)
 
     def _msg_resolvers(
         self,
