@@ -181,7 +181,7 @@ class ControllableSync(Sync):
 
         msg_list: list[str] = msg.split(MSG_SEPARATOR)
         if msg_list[0] == MSG_OFF:
-            msg_list = [MSG_OFF]  # discard any data followed by "off"
+            msg_list = [MSG_OFF]
 
         state = self._hass.states.get(self._entity_id)
         attributes = state.attributes if state is not None else {}
@@ -189,7 +189,7 @@ class ControllableSync(Sync):
         for resolver in self._msg_resolvers():
             start_index = resolver[0]
             end_index = resolver[1]
-            if end_index > len(msg_list):
+            if start_index >= len(msg_list):
                 continue
             try:
                 (domain, service, data) = resolver[2](
