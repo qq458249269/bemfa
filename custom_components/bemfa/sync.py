@@ -112,6 +112,13 @@ class Sync(ABC):
 
         return MSG_SEPARATOR.join(parts)
 
+    def resolve_msg(self, msg: str):
+        """Resolve an mqtt message received from bemfa service.
+
+        Read-only syncs do not act on incoming messages; controllable
+        syncs override this method.
+        """
+
     @abstractmethod
     def _generate_msg_parts(self) -> list[str]:
         raise NotImplementedError
@@ -194,7 +201,7 @@ class ControllableSync(Sync):
                     ],
                     attributes,
                 )
-            except (TypeError, ValueError, KeyError, IndexError):
+            except (TypeError, ValueError, KeyError, IndexError, ZeroDivisionError):
                 _LOGGING.warning(
                     "Ignoring message %r for %s: unsupported value",
                     msg,
@@ -205,9 +212,17 @@ class ControllableSync(Sync):
                 continue  # resolver decided this field is not applicable
             (domain, service, data) = result
             data.update({ATTR_ENTITY_ID: self._entity_id})
-            self._hass.services.call(
-                domain=domain, service=service, service_data=data
-            )
+            try:
+                self._hass.services.call(
+                    domain=domain, service=service, service_data=data
+                )
+            except Exception:
+                _LOGGING.exception(
+                    "Failed to call service %s.%s for %s",
+                    domain,
+                    service,
+                    self._entity_id,
+                )
             # keep resolving the remaining fields of the message
 
     @abstractmethod

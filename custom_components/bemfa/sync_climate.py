@@ -222,9 +222,13 @@ class Climate(ControllableSync):
                 2,
                 3,
                 lambda msg, attributes: (
-                    DOMAIN,
-                    SERVICE_SET_TEMPERATURE,
-                    {ATTR_TEMPERATURE: msg[0]},
+                    (
+                        DOMAIN,
+                        SERVICE_SET_TEMPERATURE,
+                        {ATTR_TEMPERATURE: msg[0]},
+                    )
+                    if isinstance(msg[0], int)
+                    else None
                 ),
             ),
             (

@@ -149,5 +149,8 @@ class BemfaMqtt:
                 self._ping_lost = 0
             return
 
-        if message.topic in self._topic_to_sync:
-            self._topic_to_sync[message.topic].resolve_msg(message.payload.decode())
+        try:
+            if message.topic in self._topic_to_sync:
+                self._topic_to_sync[message.topic].resolve_msg(message.payload.decode())
+        except Exception:
+            _LOGGING.exception("Failed to handle message for topic %s", message.topic)
