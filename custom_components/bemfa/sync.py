@@ -169,6 +169,9 @@ class ControllableSync(Sync):
         Always execute the command without comparing to the entity's current
         state, e.g. a repeated ``on`` command turns the entity on again.
         """
+        if not msg:
+            return
+
         msg_list: list[str] = msg.split(MSG_SEPARATOR)
         if msg_list[0] == MSG_OFF:
             msg_list = [MSG_OFF]  # discard any data followed by "off"
@@ -179,20 +182,30 @@ class ControllableSync(Sync):
         for resolver in self._msg_resolvers():
             start_index = resolver[0]
             end_index = resolver[1]
-            if end_index > len(msg_list):
+            # resolve a field even when the message ends right after it,
+            # e.g. a bare "on"/"off" must still be handled
+            if start_index >= len(msg_list):
                 continue
-            (domain, service, data) = resolver[2](
-                [
-                    int(msg) if msg.isdigit() else msg
-                    for msg in msg_list[start_index:end_index]
-                ],
-                attributes,
-            )
+            try:
+                (domain, service, data) = resolver[2](
+                    [
+                        int(part) if part.isdigit() else part
+                        for part in msg_list[start_index:end_index]
+                    ],
+                    attributes,
+                )
+            except (TypeError, ValueError, KeyError, IndexError):
+                _LOGGING.warning(
+                    "Ignoring message %r for %s: unsupported value",
+                    msg,
+                    self._entity_id,
+                )
+                continue
             data.update({ATTR_ENTITY_ID: self._entity_id})
             self._hass.services.call(
                 domain=domain, service=service, service_data=data
             )
-            break  # call only one service at most on each msg received
+            # keep resolving the remaining fields of the message
 
     @abstractmethod
     def _msg_resolvers(
