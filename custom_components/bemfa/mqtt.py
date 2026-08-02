@@ -108,8 +108,16 @@ class BemfaMqtt:
         self._ping_publish_timer = asyncio.ensure_future(_publish_job())
 
     def _reconnect(self):
-        self.disconnect()
-        self.connect()
+        try:
+            self.disconnect()
+            self.connect()
+        except Exception:
+            _LOGGING.exception(
+                "Failed to reconnect to bemfa MQTT server, will retry after a heartbeat cycle"
+            )
+            # keep the heartbeat running so a later retry can succeed
+            self._ping()
+            return
         for sync in self._topic_to_sync.values():
             self.create_sync(sync)
 
@@ -137,10 +145,13 @@ class BemfaMqtt:
         entity_id = new_state.entity_id
         for (topic, sync) in self._topic_to_sync.items():
             if entity_id in sync.get_watched_entity_ids():
-                self._mqttc.publish(
-                    TOPIC_PUBLISH.format(topic=topic),
-                    sync.generate_msg(),
-                )
+                try:
+                    self._mqttc.publish(
+                        TOPIC_PUBLISH.format(topic=topic),
+                        sync.generate_msg(),
+                    )
+                except Exception:
+                    _LOGGING.exception("Failed to publish state for topic %s", topic)
 
     def _mqtt_on_message(self, _mqtt_client, _userdata, message) -> None:
         if message.topic == TOPIC_PING:
