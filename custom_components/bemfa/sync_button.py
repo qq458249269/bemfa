@@ -52,6 +52,8 @@ class Button(ControllableSync):
             (
                 0,
                 1,
-                lambda msg, attributes: (DOMAIN, SERVICE_PRESS, {}),
+                lambda msg, attributes: (
+                    (DOMAIN, SERVICE_PRESS, {}) if msg[0] == MSG_ON else None
+                ),
             )
         ]

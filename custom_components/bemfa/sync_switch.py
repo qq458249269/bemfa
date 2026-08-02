@@ -88,12 +88,16 @@ class Switch(ControllableSync):
                 # split bemfa msg by "#", then take a sub list
                 0,  # from this index
                 1,  # to this index
-                lambda msg, attributes: (  # and pass to this fun as param "msg"
-                    self._service_domain(),
-                    self._service_names()[0]
-                    if msg[0] == MSG_ON
-                    else self._service_names()[1],
-                    {},
+                lambda msg, attributes: (
+                    (
+                        self._service_domain(),
+                        self._service_names()[0]
+                        if msg[0] == MSG_ON
+                        else self._service_names()[1],
+                        {},
+                    )
+                    if msg[0] in (MSG_ON, MSG_OFF)
+                    else None
                 ),
             )
         ]
@@ -228,21 +232,25 @@ class Vacuum(Switch):
                 0,
                 1,
                 lambda msg, attributes: (
-                    VACUUM_DOMAIN,
-                    SERVICE_START
-                    if msg[0] == MSG_ON
-                    and attributes[ATTR_SUPPORTED_FEATURES] & VacuumEntityFeature.START
-                    else SERVICE_TURN_ON
-                    if msg[0] == MSG_ON
-                    else SERVICE_RETURN_TO_BASE
-                    if msg[0] == MSG_OFF
-                    and attributes[ATTR_SUPPORTED_FEATURES]
-                    & VacuumEntityFeature.RETURN_HOME
-                    else SERVICE_STOP
-                    if msg[0] == MSG_OFF
-                    and attributes[ATTR_SUPPORTED_FEATURES] & VacuumEntityFeature.STOP
-                    else SERVICE_TURN_OFF,
-                    {},
+                    (
+                        VACUUM_DOMAIN,
+                        SERVICE_START
+                        if msg[0] == MSG_ON
+                        and attributes[ATTR_SUPPORTED_FEATURES] & VacuumEntityFeature.START
+                        else SERVICE_TURN_ON
+                        if msg[0] == MSG_ON
+                        else SERVICE_RETURN_TO_BASE
+                        if msg[0] == MSG_OFF
+                        and attributes[ATTR_SUPPORTED_FEATURES]
+                        & VacuumEntityFeature.RETURN_HOME
+                        else SERVICE_STOP
+                        if msg[0] == MSG_OFF
+                        and attributes[ATTR_SUPPORTED_FEATURES] & VacuumEntityFeature.STOP
+                        else SERVICE_TURN_OFF,
+                        {},
+                    )
+                    if msg[0] in (MSG_ON, MSG_OFF)
+                    else None
                 ),
             )
         ]

@@ -187,7 +187,7 @@ class ControllableSync(Sync):
             if start_index >= len(msg_list):
                 continue
             try:
-                (domain, service, data) = resolver[2](
+                result = resolver[2](
                     [
                         int(part) if part.isdigit() else part
                         for part in msg_list[start_index:end_index]
@@ -201,6 +201,9 @@ class ControllableSync(Sync):
                     self._entity_id,
                 )
                 continue
+            if result is None:
+                continue  # resolver decided this field is not applicable
+            (domain, service, data) = result
             data.update({ATTR_ENTITY_ID: self._entity_id})
             self._hass.services.call(
                 domain=domain, service=service, service_data=data
