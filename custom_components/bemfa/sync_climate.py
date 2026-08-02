@@ -209,10 +209,14 @@ class Climate(ControllableSync):
                     SERVICE_SET_HVAC_MODE,
                     {ATTR_HVAC_MODE: SUPPORTED_HVAC_MODES[msg[1] - 1]},
                 )
-                if len(msg) > 1 and msg[1] >= 1 and msg[1] <= 5
+                if len(msg) > 1
+                and isinstance(msg[1], int)
+                and 1 <= msg[1] <= len(SUPPORTED_HVAC_MODES)
                 else (DOMAIN, SERVICE_TURN_ON, {})
-                if msg[0] == MSG_ON and len(msg) == 1
-                else (DOMAIN, SERVICE_TURN_OFF, {}),
+                if msg[0] == MSG_ON
+                else (DOMAIN, SERVICE_TURN_OFF, {})
+                if msg[0] == MSG_OFF
+                else None,
             ),
             (
                 2,
