@@ -10,14 +10,19 @@ from homeassistant.components.climate import (
     ATTR_FAN_MODE,
     ATTR_FAN_MODES,
     ATTR_HVAC_MODE,
+    ATTR_PRESET_MODE,
+    ATTR_PRESET_MODES,
     ATTR_SWING_MODE,
     ATTR_SWING_MODES,
     FAN_AUTO,
     FAN_LOW,
     FAN_MEDIUM,
     FAN_HIGH,
+    PRESET_ECO,
+    PRESET_SLEEP,
     SERVICE_SET_FAN_MODE,
     SERVICE_SET_HVAC_MODE,
+    SERVICE_SET_PRESET_MODE,
     SERVICE_SET_TEMPERATURE,
     SERVICE_SET_SWING_MODE,
     SWING_OFF,
@@ -188,6 +193,42 @@ class Climate(ControllableSync):
             ),
         ]
 
+    def _resolve_onoff(
+        self,
+        msg: list[str | int],
+        attributes: ReadOnlyDict[Mapping[str, Any]],
+    ) -> (str, str, dict[str, Any]) | None:
+        """Resolve the on/off + mode/preset part of a bemfa climate message.
+
+        Message format: ``on#mode`` where mode is:
+        - 1..5 -> HVAC mode (auto/cool/heat/fan_only/dry)
+        - 6    -> sleep preset
+        - 7    -> eco preset
+        A bare ``on``/``off`` turns the climate on/off.
+        """
+        if len(msg) > 1 and isinstance(msg[1], int):
+            if 1 <= msg[1] <= len(SUPPORTED_HVAC_MODES):
+                return (
+                    DOMAIN,
+                    SERVICE_SET_HVAC_MODE,
+                    {ATTR_HVAC_MODE: SUPPORTED_HVAC_MODES[msg[1] - 1]},
+                )
+            preset = {6: PRESET_SLEEP, 7: PRESET_ECO}.get(msg[1])
+            if preset and has_key(attributes, ATTR_PRESET_MODES):
+                if preset in attributes[ATTR_PRESET_MODES]:
+                    return (
+                        DOMAIN,
+                        SERVICE_SET_PRESET_MODE,
+                        {ATTR_PRESET_MODE: preset},
+                    )
+            # mode 6/7 but the entity does not support the preset:
+            # fall back to turning the climate on without changing the mode
+        if msg[0] == MSG_ON:
+            return (DOMAIN, SERVICE_TURN_ON, {})
+        if msg[0] == MSG_OFF:
+            return (DOMAIN, SERVICE_TURN_OFF, {})
+        return None
+
     def _msg_resolvers(
         self,
     ) -> list[
@@ -204,19 +245,7 @@ class Climate(ControllableSync):
             (
                 0,
                 2,
-                lambda msg, attributes: (
-                    DOMAIN,
-                    SERVICE_SET_HVAC_MODE,
-                    {ATTR_HVAC_MODE: SUPPORTED_HVAC_MODES[msg[1] - 1]},
-                )
-                if len(msg) > 1
-                and isinstance(msg[1], int)
-                and 1 <= msg[1] <= len(SUPPORTED_HVAC_MODES)
-                else (DOMAIN, SERVICE_TURN_ON, {})
-                if msg[0] == MSG_ON
-                else (DOMAIN, SERVICE_TURN_OFF, {})
-                if msg[0] == MSG_OFF
-                else None,
+                self._resolve_onoff,
             ),
             (
                 2,
