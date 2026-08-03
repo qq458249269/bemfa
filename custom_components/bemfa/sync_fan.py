@@ -69,28 +69,38 @@ class Fan(ControllableSync):
                 0,
                 2,
                 lambda msg, attributes: (
-                    DOMAIN,
-                    SERVICE_SET_PERCENTAGE,
-                    {
-                        ATTR_PERCENTAGE: min(
-                            max(msg[1], 1) * attributes[ATTR_PERCENTAGE_STEP], 100
-                        )
-                    },
-                )
-                if len(msg) > 1 and has_key(attributes, ATTR_PERCENTAGE_STEP)
-                else (
-                    DOMAIN,
-                    SERVICE_TURN_ON if msg[0] == MSG_ON else SERVICE_TURN_OFF,
-                    {},
+                    (
+                        DOMAIN,
+                        SERVICE_SET_PERCENTAGE,
+                        {
+                            ATTR_PERCENTAGE: min(
+                                max(msg[1], 1) * attributes[ATTR_PERCENTAGE_STEP], 100
+                            )
+                        },
+                    )
+                    if len(msg) > 1
+                    and isinstance(msg[1], int)
+                    and has_key(attributes, ATTR_PERCENTAGE_STEP)
+                    else (
+                        DOMAIN,
+                        SERVICE_TURN_ON if msg[0] == MSG_ON else SERVICE_TURN_OFF,
+                        {},
+                    )
+                    if msg[0] in (MSG_ON, MSG_OFF)
+                    else None
                 ),
             ),
             (
                 2,
                 3,
                 lambda msg, attributes: (
-                    DOMAIN,
-                    SERVICE_OSCILLATE,
-                    {ATTR_OSCILLATING: msg[0] == 1},
+                    (
+                        DOMAIN,
+                        SERVICE_OSCILLATE,
+                        {ATTR_OSCILLATING: msg[0] == 1},
+                    )
+                    if isinstance(msg[0], int)
+                    else None
                 ),
             ),
         ]

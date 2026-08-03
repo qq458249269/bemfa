@@ -65,19 +65,23 @@ class Cover(ControllableSync):
                 0,
                 2,
                 lambda msg, attributes: (
-                    DOMAIN,
-                    SERVICE_SET_COVER_POSITION,
-                    {ATTR_POSITION: msg[1]},
-                )
-                if len(msg) > 1
-                else (
-                    DOMAIN,
-                    SERVICE_OPEN_COVER
-                    if msg[0] == MSG_ON
-                    else SERVICE_CLOSE_COVER
-                    if msg[0] == MSG_OFF
-                    else SERVICE_STOP_COVER,
-                    {},
+                    (
+                        DOMAIN,
+                        SERVICE_SET_COVER_POSITION,
+                        {ATTR_POSITION: msg[1]},
+                    )
+                    if len(msg) > 1 and isinstance(msg[1], int)
+                    else (
+                        DOMAIN,
+                        SERVICE_OPEN_COVER
+                        if msg[0] == MSG_ON
+                        else SERVICE_CLOSE_COVER
+                        if msg[0] == MSG_OFF
+                        else SERVICE_STOP_COVER,
+                        {},
+                    )
+                    if msg[0] in (MSG_ON, MSG_OFF, MSG_PAUSE)
+                    else None
                 ),
             )
         ]

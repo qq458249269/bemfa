@@ -112,6 +112,13 @@ class Sync(ABC):
 
         return MSG_SEPARATOR.join(parts)
 
+    def resolve_msg(self, msg: str):
+        """Resolve an mqtt message received from bemfa service.
+
+        Read-only syncs do not act on incoming messages; controllable
+        syncs override this method.
+        """
+
     @abstractmethod
     def _generate_msg_parts(self) -> list[str]:
         raise NotImplementedError
@@ -169,6 +176,12 @@ class ControllableSync(Sync):
         if state is None:
             return
 
+        Always execute the command without comparing to the entity's current
+        state, e.g. a repeated ``on`` command turns the entity on again.
+        """
+        if not msg:
+            return
+
         msg_list: list[str] = msg.split(MSG_SEPARATOR)
         if msg_list[0] == MSG_OFF:
             msg_list = [MSG_OFF]  # discard any data followed by "off"
@@ -180,20 +193,42 @@ class ControllableSync(Sync):
 
         for resolver in self._msg_resolvers():
             start_index = resolver[0]
-            end_index = min(resolver[1], len(msg_list), len(state_msg_list))
-            if msg_list[start_index:end_index] != state_msg_list[start_index:end_index]:
-                (domain, service, data) = resolver[2](
+            end_index = resolver[1]
+            # resolve a field even when the message ends right after it,
+            # e.g. a bare "on"/"off" must still be handled
+            if start_index >= len(msg_list):
+                continue
+            try:
+                result = resolver[2](
                     [
-                        int(msg) if msg.isdigit() else msg
-                        for msg in msg_list[start_index:end_index]
+                        int(part) if part.isdigit() else part
+                        for part in msg_list[start_index:end_index]
                     ],
-                    state.attributes,
+                    attributes,
                 )
-                data.update({ATTR_ENTITY_ID: self._entity_id})
+            except (TypeError, ValueError, KeyError, IndexError, ZeroDivisionError):
+                _LOGGING.warning(
+                    "Ignoring message %r for %s: unsupported value",
+                    msg,
+                    self._entity_id,
+                )
+                continue
+            if result is None:
+                continue  # resolver decided this field is not applicable
+            (domain, service, data) = result
+            data.update({ATTR_ENTITY_ID: self._entity_id})
+            try:
                 self._hass.services.call(
                     domain=domain, service=service, service_data=data
                 )
-                break  # call only one service at most on each msg received
+            except Exception:
+                _LOGGING.exception(
+                    "Failed to call service %s.%s for %s",
+                    domain,
+                    service,
+                    self._entity_id,
+                )
+            # keep resolving the remaining fields of the message
 
     @abstractmethod
     def _msg_resolvers(
