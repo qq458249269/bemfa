@@ -171,7 +171,10 @@ class ControllableSync(Sync):
         raise NotImplementedError
 
     def resolve_msg(self, msg: str):
-        """Resolve mqtt msg received from bemfa service.
+        """Resolve mqtt msg received from bemfa service."""
+        state = self._hass.states.get(self._entity_id)
+        if state is None:
+            return
 
         Always execute the command without comparing to the entity's current
         state, e.g. a repeated ``on`` command turns the entity on again.
@@ -183,8 +186,10 @@ class ControllableSync(Sync):
         if msg_list[0] == MSG_OFF:
             msg_list = [MSG_OFF]  # discard any data followed by "off"
 
-        state = self._hass.states.get(self._entity_id)
-        attributes = state.attributes if state is not None else {}
+        # generate msg from entity to compare to received msg
+        state_msg_list = MSG_SEPARATOR.join(self._generate_msg_parts()).split(
+            MSG_SEPARATOR
+        )
 
         for resolver in self._msg_resolvers():
             start_index = resolver[0]
