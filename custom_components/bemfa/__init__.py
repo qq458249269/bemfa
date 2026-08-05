@@ -1,13 +1,10 @@
 """The bemfa integration."""
 from __future__ import annotations
 
-import hashlib
-import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import CONF_UID, DOMAIN, OPTIONS_CONFIG
-from .mqtt import BemfaMqtt
 from .service import BemfaService
 
 from . import (
@@ -22,8 +19,6 @@ from . import (
     sync_number,
     sync_device_tracker,
 )
-
-_LOGGING = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

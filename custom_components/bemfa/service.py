@@ -1,16 +1,12 @@
 """Support for bemfa service."""
 from __future__ import annotations
 
-import logging
-
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import CoreState, Event, HomeAssistant
 from .sync import SYNC_TYPES, Sync
 from .const import OPTIONS_NAME
 from .http import BemfaHttp
 from .mqtt import BemfaMqtt
-
-_LOGGING = logging.getLogger(__name__)
 
 
 class BemfaService:
@@ -20,7 +16,7 @@ class BemfaService:
         """Initialize."""
         self._hass = hass
         self._bemfa_http = BemfaHttp(hass, uid)
-        self._bemfa_mqtt = BemfaMqtt(hass, uid, None)
+        self._bemfa_mqtt = BemfaMqtt(hass, uid)
 
     async def async_start(self, config: dict[str, dict[str, str]]) -> None:
         """Start the servcie, called when Bemfa component starts."""

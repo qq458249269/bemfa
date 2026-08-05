@@ -1,8 +1,6 @@
 """Bemfa http apis."""
 from __future__ import annotations
 
-import logging
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -13,8 +11,6 @@ from .const import (
     RENAME_TOPIC_URL,
     TOPIC_PREFIX,
 )
-
-_LOGGING = logging.getLogger(__name__)
 
 
 class BemfaHttp:

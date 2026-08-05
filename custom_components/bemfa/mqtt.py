@@ -26,9 +26,7 @@ _LOGGING = logging.getLogger(__name__)
 class BemfaMqtt:
     """Set up mqtt connections to bemfa service, subscribe topcs and publish messages."""
 
-    def __init__(
-        self, hass: HomeAssistant, uid: str, entity_ids: list[str] | None
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, uid: str) -> None:
         """Initialize."""
         self._hass = hass
 
@@ -38,6 +36,7 @@ class BemfaMqtt:
         )
         self._mqttc.on_connect = self._mqtt_on_connect
         self._mqttc.on_disconnect = self._mqtt_on_disconnect
+        self._mqttc.on_message = self._mqtt_on_message
 
         self._topic_to_sync: dict[str, Sync] = {}
 

@@ -2,7 +2,6 @@
 from __future__ import annotations
 from typing import Any, Final
 
-import logging
 from collections.abc import Mapping, Callable
 import voluptuous as vol
 
@@ -62,8 +61,6 @@ from .const import (
 )
 from .utils import has_key
 from .sync import SYNC_TYPES, ControllableSync
-
-_LOGGING = logging.getLogger(__name__)
 
 SUPPORTED_HVAC_MODES = [
     HVACMode.AUTO,

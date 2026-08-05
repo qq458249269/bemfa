@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import hashlib
-import logging
 import re
 from typing import Any
 import voluptuous as vol
@@ -26,7 +25,6 @@ from .const import (
 )
 from .service import BemfaService
 
-_LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
