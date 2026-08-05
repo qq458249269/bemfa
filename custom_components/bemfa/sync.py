@@ -176,7 +176,7 @@ class ControllableSync(Sync):
         if state is None:
             return
 
-        Always execute the command without comparing to the entity's current
+        """Always execute the command without comparing to the entity's current
         state, e.g. a repeated ``on`` command turns the entity on again.
         """
         if not msg:
