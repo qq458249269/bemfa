@@ -6,7 +6,7 @@ import logging
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import CoreState, Event, HomeAssistant
 from .sync import SYNC_TYPES, Sync
-from .const import OPTIONS_NAME, TOPIC_PING
+from .const import OPTIONS_NAME
 from .http import BemfaHttp
 from .mqtt import BemfaMqtt
 
@@ -25,13 +25,6 @@ class BemfaService:
     async def async_start(self, config: dict[str, dict[str, str]]) -> None:
         """Start the servcie, called when Bemfa component starts."""
         all_topics = await self._bemfa_http.async_fetch_all_topics()
-
-        # make sure we have the ping topic for heartbeat packages
-        if TOPIC_PING not in all_topics:
-            await self._bemfa_http.async_create_topic(TOPIC_PING, "ping")
-        else:
-            # This topic does not matter to entities, remove it for following steps
-            del all_topics[TOPIC_PING]
 
         # time to make mqtt connection
         self._bemfa_mqtt.connect()
@@ -57,12 +50,7 @@ class BemfaService:
         self,
     ) -> dict[str, str]:  # topic -> name
         """Fetch topics we created from benfa servcie, include which do not exist in hass."""
-        all_topics = await self._bemfa_http.async_fetch_all_topics()
-
-        if TOPIC_PING in all_topics:
-            del all_topics[TOPIC_PING]
-
-        return all_topics
+        return await self._bemfa_http.async_fetch_all_topics()
 
     def collect_supported_syncs(self) -> list[Sync]:
         """Collect all supported hass-to-bemfa syncs."""
