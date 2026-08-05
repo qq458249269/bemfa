@@ -2,6 +2,7 @@
 
 ## 功能
 将 Home Assistant 实体同步至巴法云，并使用小爱同学/天猫精灵/小度音箱控制。
+修改了switch的触发逻辑，不判断当前状态，直接执行开关逻辑
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
