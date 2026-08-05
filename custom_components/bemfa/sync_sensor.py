@@ -1,6 +1,5 @@
 """Support for bemfa service."""
 
-import logging
 from typing import Any
 import voluptuous as vol
 
@@ -24,8 +23,6 @@ from .const import (
     TopicSuffix,
 )
 from .sync import SYNC_TYPES, Sync
-
-_LOGGING = logging.getLogger(__name__)
 
 
 def _area_entities(hass: HomeAssistant, area_id: str) -> list[str]:

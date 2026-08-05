@@ -12,7 +12,7 @@ from homeassistant.const import (
     SERVICE_STOP_COVER,
 )
 from homeassistant.util.read_only_dict import ReadOnlyDict
-from .const import MSG_OFF, MSG_ON, TopicSuffix
+from .const import MSG_OFF, MSG_ON, MSG_PAUSE, TopicSuffix
 from .utils import has_key
 from .sync import SYNC_TYPES, ControllableSync
 

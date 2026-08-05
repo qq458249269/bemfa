@@ -1,6 +1,5 @@
 """Support for bemfa service."""
 from __future__ import annotations
-import asyncio
 
 import logging
 from typing import Any
@@ -13,13 +12,9 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 
 from .const import (
-    INTERVAL_PING_RECEIVE,
-    INTERVAL_PING_SEND,
-    MAX_PING_LOST,
     MQTT_HOST,
     MQTT_KEEPALIVE,
     MQTT_PORT,
-    TOPIC_PING,
     TOPIC_PUBLISH,
 )
 
@@ -31,9 +26,7 @@ _LOGGING = logging.getLogger(__name__)
 class BemfaMqtt:
     """Set up mqtt connections to bemfa service, subscribe topcs and publish messages."""
 
-    def __init__(
-        self, hass: HomeAssistant, uid: str, entity_ids: list[str] | None
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, uid: str) -> None:
         """Initialize."""
         self._hass = hass
 
@@ -41,13 +34,13 @@ class BemfaMqtt:
         self._mqttc = mqtt.Client(
             mqtt.CallbackAPIVersion.VERSION1, uid, protocol=mqtt.MQTTv311
         )
+        self._mqttc.on_connect = self._mqtt_on_connect
+        self._mqttc.on_disconnect = self._mqtt_on_disconnect
+        self._mqttc.on_message = self._mqtt_on_message
 
         self._topic_to_sync: dict[str, Sync] = {}
 
         self._remove_listener: Any = None
-        self._ping_publish_timer: Any = None
-        self._ping_receive_timer: Any = None
-        self._ping_lost: int = 0
 
     def create_sync(self, sync: Sync):
         """Add an topic to our watching list."""
@@ -75,12 +68,8 @@ class BemfaMqtt:
 
     def connect(self) -> None:
         """Connect to Bamfa service."""
-        # Send heartbeat packages to check the connection first in case we failed to make mqtt connection
-        self._ping()
-
-        self._mqttc.connect(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE)
-        self._mqttc.on_message = self._mqtt_on_message
-
+        # connect_async lets the network loop keep retrying until connected
+        self._mqttc.connect_async(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE)
         self._mqttc.loop_start()
 
         # Listen for state changes
@@ -88,55 +77,53 @@ class BemfaMqtt:
             EVENT_STATE_CHANGED, self._state_listener
         )
 
-        # Listen for heartbeat packages
-        self._mqttc.subscribe(TOPIC_PING, 1)
-
-    def _ping(self):
-        async def _receive_job():
-            await asyncio.sleep(INTERVAL_PING_RECEIVE)
-            self._ping_lost += 1
-            if self._ping_lost == MAX_PING_LOST:
-                self._ping_lost = 0
-                self._reconnect()
-
-        async def _publish_job():
-            await asyncio.sleep(INTERVAL_PING_SEND)
-            self._mqttc.publish(TOPIC_PING, "ping")
-            self._ping_receive_timer = asyncio.ensure_future(_receive_job())
-            self._ping()
-
-        self._ping_publish_timer = asyncio.ensure_future(_publish_job())
-
-    def _reconnect(self):
-        try:
-            self.disconnect()
-            self.connect()
-        except Exception:
-            _LOGGING.exception(
-                "Failed to reconnect to bemfa MQTT server, will retry after a heartbeat cycle"
-            )
-            # keep the heartbeat running so a later retry can succeed
-            self._ping()
-            return
-        for sync in self._topic_to_sync.values():
-            self.create_sync(sync)
-
     def disconnect(self) -> None:
         """Disconnect from Bamfa service."""
-
-        # Remove timers
-        if self._ping_publish_timer is not None:
-            self._ping_publish_timer.cancel()
-        if self._ping_receive_timer is not None:
-            self._ping_receive_timer.cancel()
 
         # Unlisten for state changes
         if self._remove_listener is not None:
             self._remove_listener()
+            self._remove_listener = None
 
         # Destroy MQTT connection
         self._mqttc.loop_stop()
         self._mqttc.disconnect()
+
+    def _mqtt_on_connect(self, _mqtt_client, _userdata, _flags, rc) -> None:
+        """Called on initial connection and every reconnection."""
+        if rc != 0:
+            _LOGGING.warning(
+                "Failed to connect to bemfa MQTT server: %s, paho will keep retrying",
+                rc,
+            )
+            return
+
+        _LOGGING.info("Connected to bemfa MQTT server")
+
+        # Subscriptions are lost on reconnection, subscribe them again
+        for topic in list(self._topic_to_sync):
+            self._mqttc.subscribe(topic, 1)
+
+        # Re-publish current entity states on the hass event loop
+        self._hass.loop.call_soon_threadsafe(self._republish_states)
+
+    def _mqtt_on_disconnect(self, _mqtt_client, _userdata, rc) -> None:
+        """Called when disconnected, unexpectedly or not."""
+        if rc != 0:
+            _LOGGING.warning(
+                "Disconnected from bemfa MQTT server: %s, paho will reconnect", rc
+            )
+
+    def _republish_states(self):
+        """Publish the current state of every sync, runs on the hass event loop."""
+        for sync in list(self._topic_to_sync.values()):
+            try:
+                self._mqttc.publish(
+                    TOPIC_PUBLISH.format(topic=sync.topic),
+                    sync.generate_msg(),
+                )
+            except Exception:
+                _LOGGING.exception("Failed to republish state for topic %s", sync.topic)
 
     def _state_listener(self, event):
         new_state = event.data.get("new_state")
@@ -154,12 +141,6 @@ class BemfaMqtt:
                     _LOGGING.exception("Failed to publish state for topic %s", topic)
 
     def _mqtt_on_message(self, _mqtt_client, _userdata, message) -> None:
-        if message.topic == TOPIC_PING:
-            if self._ping_receive_timer is not None:
-                self._ping_receive_timer.cancel()
-                self._ping_lost = 0
-            return
-
         try:
             if message.topic in self._topic_to_sync:
                 self._topic_to_sync[message.topic].resolve_msg(message.payload.decode())

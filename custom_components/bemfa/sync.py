@@ -176,20 +176,16 @@ class ControllableSync(Sync):
         if state is None:
             return
 
-        Always execute the command without comparing to the entity's current
-        state, e.g. a repeated ``on`` command turns the entity on again.
-        """
+        attributes = state.attributes
+
+        # Always execute the command without comparing to the entity's current
+        # state, e.g. a repeated ``on`` command turns the entity on again.
         if not msg:
             return
 
         msg_list: list[str] = msg.split(MSG_SEPARATOR)
         if msg_list[0] == MSG_OFF:
             msg_list = [MSG_OFF]  # discard any data followed by "off"
-
-        # generate msg from entity to compare to received msg
-        state_msg_list = MSG_SEPARATOR.join(self._generate_msg_parts()).split(
-            MSG_SEPARATOR
-        )
 
         for resolver in self._msg_resolvers():
             start_index = resolver[0]
